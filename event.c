@@ -1,34 +1,48 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <sys/types.h>
+#include <stdatomic.h>
 
+// Application State Data
+atomic_int running = 1;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 void* input_thread_procedure(void* arg)
 {
-	pthread_mutex_lock(&lock);
-	int* ctr_ptr = (int*)arg;
-	printf("input_thread: pre event counter = %d\n", *ctr_ptr);
-	*ctr_ptr+=1;
-	printf("input_thread: post event counter = %d\n", *ctr_ptr);
-	pthread_mutex_unlock(&lock);
+	while(atomic_load(&running))
+	{
+		if('q' == getchar()) atomic_store(&running, 0);
+		// Detect if user pressed
+		pthread_mutex_lock(&lock);
+		int* ctr_ptr = (int*)arg;
+		*ctr_ptr+=1;
+		pthread_mutex_unlock(&lock);
+	}
+
 	return NULL;
 }
 
 void* timer_thread_procedure(void* arg)
 {
-	pthread_mutex_lock(&lock);
-	int* ctr_ptr = (int*)arg;
-	printf("timer_thread: pre event counter = %d\n", *ctr_ptr);
-	*ctr_ptr+=1;
-	printf("timer_thread: post event counter = %d\n", *ctr_ptr);
-	pthread_mutex_unlock(&lock);
+	while(atomic_load(&running))
+	{
+		pthread_mutex_lock(&lock);
+		int* ctr_ptr = (int*)arg;
+		*ctr_ptr+=1;
+		pthread_mutex_unlock(&lock);
+	}
+
 	return NULL;
 }
 
 void* dispatcher_thread_procedure(void* arg)
 {
-	printf("Hello from dispatcher\n");
+	int* ctr_ptr = (int*)arg;
+	while(atomic_load(&running))
+	{
+		printf("the current ctr is %d\n", *ctr_ptr);
+	}
+
 	return NULL;
 }
 
@@ -52,7 +66,7 @@ int main()
 		&dispatcher_thread,
 	       	NULL,
 	       	dispatcher_thread_procedure,
-	       	NULL
+	       	arg
 	);
 
 	pthread_join(input_thread, NULL);
