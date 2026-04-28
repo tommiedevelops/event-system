@@ -26,12 +26,19 @@ void* timer_thread_procedure(void* arg)
 	return NULL;
 }
 
+void* dispatcher_thread_procedure(void* arg)
+{
+	printf("Hello from dispatcher\n");
+	return NULL;
+}
+
 int main()
 {
 	// CORE
 	// initialize input thread for reporting user input events
 	pthread_t input_thread;
 	pthread_t timer_thread;
+	pthread_t dispatcher_thread;
 	int res;
 
 	// shared memory
@@ -41,8 +48,16 @@ int main()
 	res = pthread_create(&input_thread, NULL, input_thread_procedure, arg);
 	res = pthread_create(&timer_thread, NULL, timer_thread_procedure, arg);
 
+	res = pthread_create(
+		&dispatcher_thread,
+	       	NULL,
+	       	dispatcher_thread_procedure,
+	       	NULL
+	);
+
 	pthread_join(input_thread, NULL);
 	pthread_join(timer_thread, NULL);
+	pthread_join(dispatcher_thread, NULL);
 
 	return 0;
 
