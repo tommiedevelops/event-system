@@ -1,26 +1,57 @@
 #include <stdio.h>
+#include <pthread.h>
+#include <sys/types.h>
 
-void callback()
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+void* input_thread_procedure(void* arg)
 {
-	printf("callback\n");
+	pthread_mutex_lock(&lock);
+	int* ctr_ptr = (int*)arg;
+	printf("input_thread: pre event counter = %d\n", *ctr_ptr);
+	*ctr_ptr+=1;
+	printf("input_thread: post event counter = %d\n", *ctr_ptr);
+	pthread_mutex_unlock(&lock);
+	return NULL;
 }
 
-
-
-// Event handlers execute non-sequentially
-// Special care is needed to ensure event handlers are executed in the correct
-// order
+void* timer_thread_procedure(void* arg)
+{
+	pthread_mutex_lock(&lock);
+	int* ctr_ptr = (int*)arg;
+	printf("timer_thread: pre event counter = %d\n", *ctr_ptr);
+	*ctr_ptr+=1;
+	printf("timer_thread: post event counter = %d\n", *ctr_ptr);
+	pthread_mutex_unlock(&lock);
+	return NULL;
+}
 
 int main()
 {
-	printf("Hello, world!\n");
+	// CORE
+	// initialize input thread for reporting user input events
+	pthread_t input_thread;
+	pthread_t timer_thread;
+	int res;
 
-	// Event Loop (Listen for Events)
-	// Not the same as "Message Driven Programming"
-	while(true)
-	{
-		// Callback Functions
-		callback();
-	}
+	// shared memory
+	int event_counter = 0;
+
+	void* arg = (void*)&event_counter;
+	res = pthread_create(&input_thread, NULL, input_thread_procedure, arg);
+	res = pthread_create(&timer_thread, NULL, timer_thread_procedure, arg);
+
+	pthread_join(input_thread, NULL);
+	pthread_join(timer_thread, NULL);
+
+	return 0;
+
+	// initialize shared memory ( event queue ) for events to write to
+	// initialize dispatcher thread for reading from the event queue and 
+	// calling relevnat callbacks
+	
+	// APP
+	// allow user to subscribe to events from dispatchers catalog with
+	// custom callback functions
 }
 
