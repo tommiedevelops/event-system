@@ -69,6 +69,8 @@ int main()
 	       	arg
 	);
 
+	if(!res) return -1;
+
 	pthread_join(input_thread, NULL);
 	pthread_join(timer_thread, NULL);
 	pthread_join(dispatcher_thread, NULL);
